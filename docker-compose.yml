@@ -1,0 +1,79 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sport-analytics-postgres
+    environment:
+      POSTGRES_DB: sport_analytics
+      POSTGRES_USER: sa_user
+      POSTGRES_PASSWORD: sa_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sa_user -d sport_analytics"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24-alpine
+    container_name: sport-analytics-clickhouse
+    environment:
+      CLICKHOUSE_DB: sport_analytics
+      CLICKHOUSE_USER: sa_user
+      CLICKHOUSE_PASSWORD: sa_password
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - ch_data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: sport-analytics-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sport-analytics-backend
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: "jdbc:postgresql://postgres:5432/sport_analytics"
+      DATABASE_USER: sa_user
+      DATABASE_PASSWORD: sa_password
+      CLICKHOUSE_URL: "http://clickhouse:8123"
+      REDIS_URL: "redis://redis:6379"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  pg_data:
+  ch_data:

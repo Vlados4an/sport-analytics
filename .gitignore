@@ -1,0 +1,29 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Runtime
+*.log
+*.pid
+
+# Secrets
+.env
+*.env.local
+
+# Docker volumes
+pg_data/
+ch_data/
