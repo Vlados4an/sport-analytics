@@ -22,5 +22,10 @@ export const register = (loginName: string, password: string) =>
   api.post('/auth/register', { login: loginName, password }).then(r => r.data)
 export const seedData = () => api.post('/admin/seed').then(r => r.data)
 export const recalculateRatings = () => api.post('/admin/recalculate-ratings', {}).then(r => r.data)
+export const runEtl = () => api.post('/admin/etl/run').then(r => r.data)
+export const fetchAdminEvents = (limit = 30) => api.get(`/admin/events?limit=${limit}`).then(r => r.data)
+export const fetchAdminStatus = () => api.get('/admin/status').then(r => r.data)
+export const clearCache = () => api.post('/admin/cache/clear').then(r => r.data)
+export const fetchStandings = (leagueId: number) => api.get(`/leagues/${leagueId}/standings`).then(r => r.data)
 
 export default api
