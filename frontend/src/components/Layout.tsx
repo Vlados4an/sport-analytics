@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   Trophy,
@@ -6,8 +6,11 @@ import {
   TrendingUp,
   Shield,
   LogIn,
+  LogOut,
+  UserCircle2,
 } from 'lucide-react'
 import clsx from 'clsx'
+import { getAuthUser, isAuthenticated, logout } from '../api/client'
 
 const TABS = [
   { to: '/', label: 'Главная', icon: LayoutDashboard },
@@ -19,6 +22,14 @@ const TABS = [
 
 export default function Layout() {
   const { pathname } = useLocation()
+  const nav = useNavigate()
+  const authed = isAuthenticated()
+  const user = getAuthUser()
+
+  const handleLogout = () => {
+    logout()
+    nav('/login', { replace: true })
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -36,34 +47,52 @@ export default function Layout() {
             </Link>
 
             {/* Desktop nav */}
-            <nav className="hidden md:flex items-center gap-1">
-              {TABS.map(({ to, label, icon: Icon }) => {
-                const active = to === '/' ? pathname === '/' : pathname.startsWith(to)
-                return (
-                  <Link
-                    key={to}
-                    to={to}
-                    className={clsx(
-                      'flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-medium transition-colors',
-                      active
-                        ? 'bg-brand-50 text-brand-700'
-                        : 'text-ink-500 hover:text-ink-800 hover:bg-ink-50',
-                    )}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {label}
-                  </Link>
-                )
-              })}
-            </nav>
+            {authed && (
+              <nav className="hidden md:flex items-center gap-1">
+                {TABS.map(({ to, label, icon: Icon }) => {
+                  const active = to === '/' ? pathname === '/' : pathname.startsWith(to)
+                  return (
+                    <Link
+                      key={to}
+                      to={to}
+                      className={clsx(
+                        'flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-medium transition-colors',
+                        active
+                          ? 'bg-brand-50 text-brand-700'
+                          : 'text-ink-500 hover:text-ink-800 hover:bg-ink-50',
+                      )}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {label}
+                    </Link>
+                  )
+                })}
+              </nav>
+            )}
 
-            <Link
-              to="/login"
-              className="flex items-center gap-1.5 text-[13px] font-medium text-ink-500 hover:text-brand-600 transition-colors"
-            >
-              <LogIn className="w-4 h-4" />
-              <span className="hidden sm:inline">Войти</span>
-            </Link>
+            {authed ? (
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-1.5 text-[13px] text-ink-600">
+                  <UserCircle2 className="w-4 h-4 text-brand-500" />
+                  <span className="font-medium">{user?.login}</span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 text-[13px] font-medium text-ink-500 hover:text-rose-600 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Выйти</span>
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-1.5 text-[13px] font-medium text-ink-500 hover:text-brand-600 transition-colors"
+              >
+                <LogIn className="w-4 h-4" />
+                <span className="hidden sm:inline">Войти</span>
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -74,26 +103,28 @@ export default function Layout() {
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-xl border-t border-ink-100 safe-area-pb">
-        <div className="flex items-center justify-around h-14">
-          {TABS.map(({ to, label, icon: Icon }) => {
-            const active = to === '/' ? pathname === '/' : pathname.startsWith(to)
-            return (
-              <Link
-                key={to}
-                to={to}
-                className={clsx(
-                  'flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors',
-                  active ? 'text-brand-600' : 'text-ink-400',
-                )}
-              >
-                <Icon className="w-5 h-5" />
-                {label}
-              </Link>
-            )
-          })}
-        </div>
-      </nav>
+      {authed && (
+        <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-xl border-t border-ink-100 safe-area-pb">
+          <div className="flex items-center justify-around h-14">
+            {TABS.map(({ to, label, icon: Icon }) => {
+              const active = to === '/' ? pathname === '/' : pathname.startsWith(to)
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className={clsx(
+                    'flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors',
+                    active ? 'text-brand-600' : 'text-ink-400',
+                  )}
+                >
+                  <Icon className="w-5 h-5" />
+                  {label}
+                </Link>
+              )
+            })}
+          </div>
+        </nav>
+      )}
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { LogIn, UserPlus } from 'lucide-react'
-import { login, register } from '../api/client'
+import { login, register, isAuthenticated } from '../api/client'
 
 export default function LoginPage() {
   const nav = useNavigate()
@@ -11,6 +11,8 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  if (isAuthenticated()) return <Navigate to="/" replace />
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -18,7 +20,7 @@ export default function LoginPage() {
     try {
       if (isReg) await register(loginName, password)
       await login(loginName, password)
-      nav('/')
+      nav('/', { replace: true })
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Ошибка авторизации')
     } finally { setLoading(false) }
@@ -46,7 +48,7 @@ export default function LoginPage() {
           </div>
           <div>
             <label className="text-[11px] font-semibold text-ink-500 mb-1 block">Пароль</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6}
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={isReg ? 8 : 1}
               className="w-full bg-ink-50 border border-ink-200 text-ink-800 rounded-xl px-3.5 py-2.5 text-[13px] focus:border-brand-400 focus:ring-1 focus:ring-brand-200 focus:outline-none"
               placeholder="••••••" />
           </div>
