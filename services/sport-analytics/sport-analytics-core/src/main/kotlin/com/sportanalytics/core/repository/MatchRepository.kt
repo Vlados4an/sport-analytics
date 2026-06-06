@@ -39,6 +39,7 @@ class MatchRepository(private val dsl: DSLContext) {
             .set(MATCHES.HOME_SCORE, match.homeScore)
             .set(MATCHES.AWAY_SCORE, match.awayScore)
             .set(MATCHES.STATUS, match.status)
+            .set(MATCHES.ROUND, match.round)
             .set(MATCHES.API_ID, match.apiId)
             .returningResult(MATCHES.ID)
             .fetchOne()!!
@@ -52,6 +53,7 @@ class MatchRepository(private val dsl: DSLContext) {
         homeTeamId = r[MATCHES.HOME_TEAM_ID], awayTeamId = r[MATCHES.AWAY_TEAM_ID],
         matchDate = r[MATCHES.MATCH_DATE], stadium = r[MATCHES.STADIUM],
         attendance = r[MATCHES.ATTENDANCE], homeScore = r[MATCHES.HOME_SCORE],
-        awayScore = r[MATCHES.AWAY_SCORE], status = r[MATCHES.STATUS], apiId = r[MATCHES.API_ID],
+        awayScore = r[MATCHES.AWAY_SCORE], status = r[MATCHES.STATUS],
+        round = r[MATCHES.ROUND], apiId = r[MATCHES.API_ID],
     )
 }

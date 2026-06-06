@@ -76,6 +76,7 @@ fun Route.predictionRoutes(di: DI) {
                     "lambdaHome" to "%.3f".format(result.lambdaHome),
                     "muAway" to "%.3f".format(result.muAway),
                     "model" to result.modelVersion,
+                    "scoreMatrix" to result.scoreMatrix.map { row -> row.toList() },
                 ),
             )
         }

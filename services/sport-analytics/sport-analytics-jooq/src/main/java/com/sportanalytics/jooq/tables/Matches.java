@@ -15,14 +15,12 @@ import java.util.List;
 import org.jooq.Check;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Function12;
 import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.OrderField;
 import org.jooq.Record;
-import org.jooq.Records;
-import org.jooq.Row12;
+import org.jooq.Row;
 import org.jooq.Schema;
 import org.jooq.SelectField;
 import org.jooq.Table;
@@ -66,6 +64,8 @@ public class Matches extends TableImpl<MatchesRecord> {
     public final TableField<MatchesRecord, Integer> AWAY_SCORE = createField(DSL.name("away_score"), SQLDataType.INTEGER, this, "");
 
     public final TableField<MatchesRecord, String> STATUS = createField(DSL.name("status"), SQLDataType.VARCHAR(20).nullable(false).defaultValue(DSL.field("'scheduled'::character varying", SQLDataType.VARCHAR)), this, "");
+
+    public final TableField<MatchesRecord, Integer> ROUND = createField(DSL.name("round"), SQLDataType.INTEGER, this, "");
 
     public final TableField<MatchesRecord, Integer> API_ID = createField(DSL.name("api_id"), SQLDataType.INTEGER, this, "");
 
@@ -193,20 +193,8 @@ public class Matches extends TableImpl<MatchesRecord> {
         return new Matches(name.getQualifiedName(), null);
     }
 
-    // -------------------------------------------------------------------------
-    // Row12 type methods
-    // -------------------------------------------------------------------------
-
     @Override
-    public Row12<Integer, Integer, Integer, Integer, Instant, String, Integer, Integer, Integer, String, Integer, Instant> fieldsRow() {
-        return (Row12) super.fieldsRow();
-    }
-
-    public <U> SelectField<U> mapping(Function12<? super Integer, ? super Integer, ? super Integer, ? super Integer, ? super Instant, ? super String, ? super Integer, ? super Integer, ? super Integer, ? super String, ? super Integer, ? super Instant, ? extends U> from) {
-        return convertFrom(Records.mapping(from));
-    }
-
-    public <U> SelectField<U> mapping(Class<U> toType, Function12<? super Integer, ? super Integer, ? super Integer, ? super Integer, ? super Instant, ? super String, ? super Integer, ? super Integer, ? super Integer, ? super String, ? super Integer, ? super Instant, ? extends U> from) {
-        return convertFrom(toType, Records.mapping(from));
+    public Row fieldsRow() {
+        return super.fieldsRow();
     }
 }

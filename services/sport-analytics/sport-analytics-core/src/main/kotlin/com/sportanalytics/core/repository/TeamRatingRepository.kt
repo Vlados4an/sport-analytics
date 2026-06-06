@@ -15,12 +15,23 @@ class TeamRatingRepository(private val dsl: DSLContext) {
             .fetchOne()
             ?.let { mapRating(it) }
 
-    fun findByLeagueId(leagueId: Int): List<TeamRating> =
-        dsl.selectFrom(TEAM_RATINGS)
+    fun findByLeagueId(leagueId: Int): List<TeamRating> {
+        // Get only the latest rating per team
+        val latest = dsl.select(TEAM_RATINGS.TEAM_ID, org.jooq.impl.DSL.max(TEAM_RATINGS.CALCULATED_AT).`as`("max_at"))
+            .from(TEAM_RATINGS)
             .where(TEAM_RATINGS.LEAGUE_ID.eq(leagueId))
+            .groupBy(TEAM_RATINGS.TEAM_ID)
+
+        return dsl.selectFrom(TEAM_RATINGS)
+            .where(TEAM_RATINGS.LEAGUE_ID.eq(leagueId))
+            .and(
+                org.jooq.impl.DSL.row(TEAM_RATINGS.TEAM_ID, TEAM_RATINGS.CALCULATED_AT)
+                    .`in`(latest)
+            )
             .orderBy(TEAM_RATINGS.RATING.desc())
             .fetch()
             .map { mapRating(it) }
+    }
 
     fun insert(rating: TeamRating): Int =
         dsl.insertInto(TEAM_RATINGS)

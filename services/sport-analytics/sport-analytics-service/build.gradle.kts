@@ -28,6 +28,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.logback.classic)
     implementation(libs.jbcrypt)
+    implementation(libs.jjwt.api)
+    runtimeOnly(libs.jjwt.impl)
+    runtimeOnly(libs.jjwt.jackson)
 
     testImplementation(libs.kotest.runner.junit5)
     testImplementation(libs.kotest.assertions.core)

@@ -13,6 +13,7 @@ data class Match(
     val homeScore: Int? = null,
     val awayScore: Int? = null,
     val status: String = "scheduled",
+    val round: Int? = null,
     val apiId: Int? = null,
     val createdAt: Instant = Instant.now(),
 )
