@@ -2,45 +2,27 @@ package com.sportanalytics.service.route
 
 import com.sportanalytics.core.repository.UserRepository
 import com.sportanalytics.di.justInstance
-import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.security.Keys
+import com.sportanalytics.service.auth.AuthService
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.kodein.di.DI
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import java.util.*
-import javax.crypto.SecretKey
 
 data class RegisterRequest(val login: String, val password: String)
 data class LoginRequest(val login: String, val password: String)
-
-private val JWT_SECRET: SecretKey = Keys.hmacShaKeyFor(
-    "sport-analytics-jwt-secret-key-minimum-256-bits-long!!".toByteArray(),
-)
-private const val ACCESS_TOKEN_MINUTES = 30L
-private const val REFRESH_TOKEN_DAYS = 7L
-
-private fun generateToken(login: String, role: String, expiration: Instant): String =
-    Jwts.builder()
-        .subject(login)
-        .claim("role", role)
-        .issuedAt(Date.from(Instant.now()))
-        .expiration(Date.from(expiration))
-        .signWith(JWT_SECRET)
-        .compact()
+data class RefreshRequest(val refreshToken: String)
 
 fun Route.authRoutes(di: DI) {
     val userRepo = di.justInstance<UserRepository>()
+    val authService = di.justInstance<AuthService>()
 
     route("/api/auth") {
         post("/register") {
             val body = call.receive<RegisterRequest>()
             require(body.login.length >= 3) { "Login min 3 chars" }
-            require(body.password.length >= 6) { "Password min 6 chars" }
+            authService.checkPasswordPolicy(body.password)?.let { throw IllegalArgumentException(it) }
             require(!userRepo.existsByLogin(body.login)) { "User exists" }
 
             val hash = org.mindrot.jbcrypt.BCrypt.hashpw(body.password, org.mindrot.jbcrypt.BCrypt.gensalt(10))
@@ -56,18 +38,31 @@ fun Route.authRoutes(di: DI) {
 
             require(org.mindrot.jbcrypt.BCrypt.checkpw(body.password, user.passwordHash)) { "Invalid credentials" }
 
-            val now = Instant.now()
-            val accessToken = generateToken(user.login, user.role, now.plus(ACCESS_TOKEN_MINUTES, ChronoUnit.MINUTES))
-            val refreshToken = generateToken(user.login, user.role, now.plus(REFRESH_TOKEN_DAYS, ChronoUnit.DAYS))
+            val tokens = authService.issueTokens(user.login, user.role)
 
             call.respond(
                 mapOf(
                     "status" to "ok",
                     "login" to user.login,
                     "role" to user.role,
-                    "accessToken" to accessToken,
-                    "refreshToken" to refreshToken,
-                    "expiresIn" to ACCESS_TOKEN_MINUTES * 60,
+                    "accessToken" to tokens.accessToken,
+                    "refreshToken" to tokens.refreshToken,
+                    "expiresIn" to tokens.expiresIn,
+                ),
+            )
+        }
+
+        post("/refresh") {
+            val body = call.receive<RefreshRequest>()
+            val tokens = authService.refresh(body.refreshToken)
+                ?: return@post call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Invalid refresh token"))
+
+            call.respond(
+                mapOf(
+                    "status" to "ok",
+                    "accessToken" to tokens.accessToken,
+                    "refreshToken" to tokens.refreshToken,
+                    "expiresIn" to tokens.expiresIn,
                 ),
             )
         }

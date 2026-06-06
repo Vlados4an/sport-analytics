@@ -1,9 +1,13 @@
 package com.sportanalytics.core.seed
 
-import com.sportanalytics.core.model.*
-import com.sportanalytics.core.repository.*
+import com.sportanalytics.core.model.League
+import com.sportanalytics.core.model.Match
+import com.sportanalytics.core.model.Team
+import com.sportanalytics.core.repository.LeagueRepository
+import com.sportanalytics.core.repository.MatchRepository
+import com.sportanalytics.core.repository.MatchStatsRepository
+import com.sportanalytics.core.repository.TeamRepository
 import org.slf4j.LoggerFactory
-import java.math.BigDecimal
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import kotlin.random.Random
@@ -16,112 +20,110 @@ class SeedDataService(
 ) {
     private val log = LoggerFactory.getLogger(SeedDataService::class.java)
 
+    companion object {
+        const val SEEDED_ROUNDS = 19
+        const val ROUND_INTERVAL_DAYS = 7L
+    }
+
     fun seed(): String {
         if (leagueRepository.findAll().isNotEmpty()) {
             return "Database already seeded"
         }
 
-        log.info("Seeding sample data...")
+        log.info("Seeding Premier League {} data...", EplData.SEASON)
 
         val leagueId = leagueRepository.insert(
-            League(name = "Premier League", country = "England", season = "2024-2025"),
+            League(name = EplData.LEAGUE_NAME, country = EplData.COUNTRY, season = EplData.SEASON),
         )
 
-        val teamNames = listOf(
-            "Arsenal", "Manchester City", "Liverpool", "Chelsea",
-            "Manchester United", "Tottenham", "Newcastle", "Aston Villa",
-            "Brighton", "West Ham",
-        )
-
-        val teamIds = teamNames.map { name ->
-            teamRepository.insert(Team(leagueId = leagueId, name = name, shortName = name.take(3).uppercase()))
+        val teamIds = EplData.TEAMS.map { t ->
+            teamRepository.insert(Team(leagueId = leagueId, name = t.name, shortName = t.shortName))
         }
 
-        // Generate round-robin schedule: 9 rounds, 5 matches per round (= 45 matches total for half-season)
-        val now = Instant.now()
-        var matchCount = 0
         val rng = Random(42)
+        val simulator = MatchSimulator(rng)
+        val now = Instant.now()
+        var finishedCount = 0
 
-        // Build proper round-robin pairings
-        val pairings = mutableListOf<Triple<Int, Int, Int>>() // (homeIdx, awayIdx, round)
-        val n = teamIds.size // 10
+        // Rounds 1..19 — finished matches with full statistics
+        for (round in 1..SEEDED_ROUNDS) {
+            val roundDate = now.minus((SEEDED_ROUNDS - round + 1) * ROUND_INTERVAL_DAYS, ChronoUnit.DAYS)
 
-        // Standard round-robin: 9 rounds for 10 teams, 5 matches each
-        val teams = (0 until n).toMutableList()
-        for (round in 1..9) {
-            for (m in 0 until n / 2) {
-                val home = teams[m]
-                val away = teams[n - 1 - m]
-                pairings.add(Triple(home, away, round))
+            for (fixture in FixtureGenerator.roundFixtures(teamIds.size, round)) {
+                insertFinishedMatch(simulator, leagueId, teamIds, fixture, round, roundDate, rng)
+                finishedCount++
             }
-            // Rotate: fix first, rotate rest
-            val last = teams.removeAt(teams.lastIndex)
-            teams.add(1, last)
         }
 
-        for ((homeIdx, awayIdx, round) in pairings) {
-            val daysAgo = ((9 - round) * 14 + rng.nextInt(0, 7)).toLong()
-            val homeGoals = poissonSample(rng, 1.5)
-            val awayGoals = poissonSample(rng, 1.2)
+        // Round 20 — upcoming scheduled matches (no results yet)
+        val nextRound = SEEDED_ROUNDS + 1
+        val scheduled = scheduleRound(leagueId, teamIds, nextRound, now.plus(3, ChronoUnit.DAYS), rng)
 
-            val matchId = matchRepository.insert(
-                Match(
-                    leagueId = leagueId,
-                    homeTeamId = teamIds[homeIdx],
-                    awayTeamId = teamIds[awayIdx],
-                    matchDate = now.minus(daysAgo, ChronoUnit.DAYS),
-                    stadium = "${teamNames[homeIdx]} Stadium",
-                    homeScore = homeGoals,
-                    awayScore = awayGoals,
-                    status = "finished",
-                    round = round,
-                ),
-            )
-
-            matchStatsRepository.insert(
-                MatchStats(
-                    matchId = matchId, teamId = teamIds[homeIdx],
-                    possession = BigDecimal(rng.nextInt(40, 65).toString()),
-                    shots = rng.nextInt(8, 20), shotsOnTarget = rng.nextInt(2, 10),
-                    corners = rng.nextInt(2, 12), fouls = rng.nextInt(6, 18),
-                    yellowCards = rng.nextInt(0, 4),
-                    redCards = if (rng.nextInt(20) == 0) 1 else 0,
-                    offsides = rng.nextInt(0, 5),
-                    passes = rng.nextInt(350, 650),
-                    passAccuracy = BigDecimal(rng.nextInt(72, 92).toString()),
-                ),
-            )
-
-            matchStatsRepository.insert(
-                MatchStats(
-                    matchId = matchId, teamId = teamIds[awayIdx],
-                    possession = BigDecimal((100 - rng.nextInt(40, 65)).toString()),
-                    shots = rng.nextInt(5, 16), shotsOnTarget = rng.nextInt(1, 8),
-                    corners = rng.nextInt(1, 9), fouls = rng.nextInt(7, 19),
-                    yellowCards = rng.nextInt(0, 5),
-                    redCards = if (rng.nextInt(25) == 0) 1 else 0,
-                    offsides = rng.nextInt(0, 4),
-                    passes = rng.nextInt(300, 600),
-                    passAccuracy = BigDecimal(rng.nextInt(68, 90).toString()),
-                ),
-            )
-
-            matchCount++
-        }
-
-        val msg = "Seeded: 1 league, ${teamNames.size} teams, $matchCount matches (9 rounds)"
+        val msg = "Seeded: 1 league, ${teamIds.size} teams, $finishedCount finished matches " +
+            "($SEEDED_ROUNDS rounds), $scheduled scheduled (round $nextRound)"
         log.info(msg)
+
         return msg
     }
 
-    private fun poissonSample(rng: Random, lambda: Double): Int {
-        val l = Math.exp(-lambda)
-        var k = 0
-        var p = 1.0
-        do {
-            k++
-            p *= rng.nextDouble()
-        } while (p > l)
-        return k - 1
+    fun insertFinishedMatch(
+        simulator: MatchSimulator,
+        leagueId: Int,
+        teamIds: List<Int>,
+        fixture: FixtureGenerator.Fixture,
+        round: Int,
+        roundDate: Instant,
+        rng: Random,
+    ): Int {
+        val home = EplData.TEAMS[fixture.homeIdx]
+        val away = EplData.TEAMS[fixture.awayIdx]
+        val result = simulator.simulate(home, away)
+
+        val matchId = matchRepository.insert(
+            Match(
+                leagueId = leagueId,
+                homeTeamId = teamIds[fixture.homeIdx],
+                awayTeamId = teamIds[fixture.awayIdx],
+                matchDate = roundDate.plus(rng.nextLong(0, 48), ChronoUnit.HOURS),
+                stadium = home.stadium,
+                attendance = result.attendance,
+                homeScore = result.homeGoals,
+                awayScore = result.awayGoals,
+                status = "finished",
+                round = round,
+                referee = result.referee,
+                statsLoaded = true,
+            ),
+        )
+
+        matchStatsRepository.insert(simulator.toMatchStats(matchId, teamIds[fixture.homeIdx], result.homeStats))
+        matchStatsRepository.insert(simulator.toMatchStats(matchId, teamIds[fixture.awayIdx], result.awayStats))
+
+        return matchId
+    }
+
+    fun scheduleRound(leagueId: Int, teamIds: List<Int>, round: Int, baseDate: Instant, rng: Random): Int {
+        if (round > EplData.TOTAL_ROUNDS) {
+            return 0
+        }
+
+        var count = 0
+        for (fixture in FixtureGenerator.roundFixtures(teamIds.size, round)) {
+            val home = EplData.TEAMS[fixture.homeIdx]
+            matchRepository.insert(
+                Match(
+                    leagueId = leagueId,
+                    homeTeamId = teamIds[fixture.homeIdx],
+                    awayTeamId = teamIds[fixture.awayIdx],
+                    matchDate = baseDate.plus(rng.nextLong(0, 48), ChronoUnit.HOURS),
+                    stadium = home.stadium,
+                    status = "scheduled",
+                    round = round,
+                ),
+            )
+            count++
+        }
+
+        return count
     }
 }

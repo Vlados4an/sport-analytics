@@ -40,6 +40,9 @@ class MatchRepository(private val dsl: DSLContext) {
             .set(MATCHES.AWAY_SCORE, match.awayScore)
             .set(MATCHES.STATUS, match.status)
             .set(MATCHES.ROUND, match.round)
+            .set(MATCHES.REFEREE, match.referee)
+            .set(MATCHES.STATS_LOADED, match.statsLoaded)
+            .set(MATCHES.METRICS_CALCULATED, match.metricsCalculated)
             .set(MATCHES.API_ID, match.apiId)
             .returningResult(MATCHES.ID)
             .fetchOne()!!
@@ -48,12 +51,67 @@ class MatchRepository(private val dsl: DSLContext) {
     fun countByLeagueId(leagueId: Int): Int =
         dsl.selectCount().from(MATCHES).where(MATCHES.LEAGUE_ID.eq(leagueId)).fetchOne(0, Int::class.java) ?: 0
 
+    fun maxRound(leagueId: Int): Int =
+        dsl.select(org.jooq.impl.DSL.max(MATCHES.ROUND))
+            .from(MATCHES)
+            .where(MATCHES.LEAGUE_ID.eq(leagueId))
+            .fetchOne(0, Int::class.java) ?: 0
+
+    fun findScheduledByRound(leagueId: Int, round: Int): List<Match> =
+        dsl.selectFrom(MATCHES)
+            .where(MATCHES.LEAGUE_ID.eq(leagueId))
+            .and(MATCHES.ROUND.eq(round))
+            .and(MATCHES.STATUS.eq("scheduled"))
+            .orderBy(MATCHES.MATCH_DATE.asc())
+            .fetch()
+            .map { mapMatch(it) }
+
+    fun minScheduledRound(leagueId: Int): Int? =
+        dsl.select(org.jooq.impl.DSL.min(MATCHES.ROUND))
+            .from(MATCHES)
+            .where(MATCHES.LEAGUE_ID.eq(leagueId))
+            .and(MATCHES.STATUS.eq("scheduled"))
+            .fetchOne(0, Int::class.java)
+
+    fun applyResult(match: Match) {
+        dsl.update(MATCHES)
+            .set(MATCHES.HOME_SCORE, match.homeScore)
+            .set(MATCHES.AWAY_SCORE, match.awayScore)
+            .set(MATCHES.STATUS, match.status)
+            .set(MATCHES.REFEREE, match.referee)
+            .set(MATCHES.ATTENDANCE, match.attendance)
+            .set(MATCHES.STATS_LOADED, match.statsLoaded)
+            .where(MATCHES.ID.eq(match.id))
+            .execute()
+    }
+
+    fun findPendingMetrics(leagueId: Int): List<Match> =
+        dsl.selectFrom(MATCHES)
+            .where(MATCHES.LEAGUE_ID.eq(leagueId))
+            .and(MATCHES.STATUS.eq("finished"))
+            .and(MATCHES.METRICS_CALCULATED.eq(false))
+            .orderBy(MATCHES.MATCH_DATE.asc())
+            .fetch()
+            .map { mapMatch(it) }
+
+    fun markMetricsCalculated(matchIds: List<Int>) {
+        if (matchIds.isEmpty()) return
+
+        dsl.update(MATCHES)
+            .set(MATCHES.METRICS_CALCULATED, true)
+            .where(MATCHES.ID.`in`(matchIds))
+            .execute()
+    }
+
     private fun mapMatch(r: Record) = Match(
         id = r[MATCHES.ID], leagueId = r[MATCHES.LEAGUE_ID],
         homeTeamId = r[MATCHES.HOME_TEAM_ID], awayTeamId = r[MATCHES.AWAY_TEAM_ID],
         matchDate = r[MATCHES.MATCH_DATE], stadium = r[MATCHES.STADIUM],
         attendance = r[MATCHES.ATTENDANCE], homeScore = r[MATCHES.HOME_SCORE],
         awayScore = r[MATCHES.AWAY_SCORE], status = r[MATCHES.STATUS],
-        round = r[MATCHES.ROUND], apiId = r[MATCHES.API_ID],
+        round = r[MATCHES.ROUND], referee = r[MATCHES.REFEREE],
+        statsLoaded = r[MATCHES.STATS_LOADED] ?: false,
+        metricsCalculated = r[MATCHES.METRICS_CALCULATED] ?: false,
+        apiId = r[MATCHES.API_ID],
     )
 }

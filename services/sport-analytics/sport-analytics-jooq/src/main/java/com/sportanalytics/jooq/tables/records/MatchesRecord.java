@@ -10,13 +10,13 @@ import java.time.Instant;
 
 import org.jooq.Field;
 import org.jooq.Record1;
-import org.jooq.Record12;
-import org.jooq.Row12;
+import org.jooq.Record16;
+import org.jooq.Row16;
 import org.jooq.impl.UpdatableRecordImpl;
 
 
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
-public class MatchesRecord extends UpdatableRecordImpl<MatchesRecord> implements Record12<Integer, Integer, Integer, Integer, Instant, String, Integer, Integer, Integer, String, Integer, Instant> {
+public class MatchesRecord extends UpdatableRecordImpl<MatchesRecord> implements Record16<Integer, Integer, Integer, Integer, Instant, String, Integer, Integer, Integer, String, Integer, Instant, Integer, String, Boolean, Boolean> {
 
     private static final long serialVersionUID = 1L;
 
@@ -128,6 +128,42 @@ public class MatchesRecord extends UpdatableRecordImpl<MatchesRecord> implements
         return (Instant) get(11);
     }
 
+    public MatchesRecord setRound(Integer value) {
+        set(12, value);
+        return this;
+    }
+
+    public Integer getRound() {
+        return (Integer) get(12);
+    }
+
+    public MatchesRecord setReferee(String value) {
+        set(13, value);
+        return this;
+    }
+
+    public String getReferee() {
+        return (String) get(13);
+    }
+
+    public MatchesRecord setStatsLoaded(Boolean value) {
+        set(14, value);
+        return this;
+    }
+
+    public Boolean getStatsLoaded() {
+        return (Boolean) get(14);
+    }
+
+    public MatchesRecord setMetricsCalculated(Boolean value) {
+        set(15, value);
+        return this;
+    }
+
+    public Boolean getMetricsCalculated() {
+        return (Boolean) get(15);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -138,17 +174,17 @@ public class MatchesRecord extends UpdatableRecordImpl<MatchesRecord> implements
     }
 
     // -------------------------------------------------------------------------
-    // Record12 type implementation
+    // Record16 type implementation
     // -------------------------------------------------------------------------
 
     @Override
-    public Row12<Integer, Integer, Integer, Integer, Instant, String, Integer, Integer, Integer, String, Integer, Instant> fieldsRow() {
-        return (Row12) super.fieldsRow();
+    public Row16<Integer, Integer, Integer, Integer, Instant, String, Integer, Integer, Integer, String, Integer, Instant, Integer, String, Boolean, Boolean> fieldsRow() {
+        return (Row16) super.fieldsRow();
     }
 
     @Override
-    public Row12<Integer, Integer, Integer, Integer, Instant, String, Integer, Integer, Integer, String, Integer, Instant> valuesRow() {
-        return (Row12) super.valuesRow();
+    public Row16<Integer, Integer, Integer, Integer, Instant, String, Integer, Integer, Integer, String, Integer, Instant, Integer, String, Boolean, Boolean> valuesRow() {
+        return (Row16) super.valuesRow();
     }
 
     @Override
@@ -212,6 +248,26 @@ public class MatchesRecord extends UpdatableRecordImpl<MatchesRecord> implements
     }
 
     @Override
+    public Field<Integer> field13() {
+        return Matches.MATCHES.ROUND;
+    }
+
+    @Override
+    public Field<String> field14() {
+        return Matches.MATCHES.REFEREE;
+    }
+
+    @Override
+    public Field<Boolean> field15() {
+        return Matches.MATCHES.STATS_LOADED;
+    }
+
+    @Override
+    public Field<Boolean> field16() {
+        return Matches.MATCHES.METRICS_CALCULATED;
+    }
+
+    @Override
     public Integer component1() {
         return getId();
     }
@@ -272,6 +328,26 @@ public class MatchesRecord extends UpdatableRecordImpl<MatchesRecord> implements
     }
 
     @Override
+    public Integer component13() {
+        return getRound();
+    }
+
+    @Override
+    public String component14() {
+        return getReferee();
+    }
+
+    @Override
+    public Boolean component15() {
+        return getStatsLoaded();
+    }
+
+    @Override
+    public Boolean component16() {
+        return getMetricsCalculated();
+    }
+
+    @Override
     public Integer value1() {
         return getId();
     }
@@ -329,6 +405,26 @@ public class MatchesRecord extends UpdatableRecordImpl<MatchesRecord> implements
     @Override
     public Instant value12() {
         return getCreatedAt();
+    }
+
+    @Override
+    public Integer value13() {
+        return getRound();
+    }
+
+    @Override
+    public String value14() {
+        return getReferee();
+    }
+
+    @Override
+    public Boolean value15() {
+        return getStatsLoaded();
+    }
+
+    @Override
+    public Boolean value16() {
+        return getMetricsCalculated();
     }
 
     @Override
@@ -404,7 +500,31 @@ public class MatchesRecord extends UpdatableRecordImpl<MatchesRecord> implements
     }
 
     @Override
-    public MatchesRecord values(Integer value1, Integer value2, Integer value3, Integer value4, Instant value5, String value6, Integer value7, Integer value8, Integer value9, String value10, Integer value11, Instant value12) {
+    public MatchesRecord value13(Integer value) {
+        setRound(value);
+        return this;
+    }
+
+    @Override
+    public MatchesRecord value14(String value) {
+        setReferee(value);
+        return this;
+    }
+
+    @Override
+    public MatchesRecord value15(Boolean value) {
+        setStatsLoaded(value);
+        return this;
+    }
+
+    @Override
+    public MatchesRecord value16(Boolean value) {
+        setMetricsCalculated(value);
+        return this;
+    }
+
+    @Override
+    public MatchesRecord values(Integer value1, Integer value2, Integer value3, Integer value4, Instant value5, String value6, Integer value7, Integer value8, Integer value9, String value10, Integer value11, Instant value12, Integer value13, String value14, Boolean value15, Boolean value16) {
         value1(value1);
         value2(value2);
         value3(value3);
@@ -417,6 +537,10 @@ public class MatchesRecord extends UpdatableRecordImpl<MatchesRecord> implements
         value10(value10);
         value11(value11);
         value12(value12);
+        value13(value13);
+        value14(value14);
+        value15(value15);
+        value16(value16);
         return this;
     }
 
@@ -428,7 +552,7 @@ public class MatchesRecord extends UpdatableRecordImpl<MatchesRecord> implements
         super(Matches.MATCHES);
     }
 
-    public MatchesRecord(Integer id, Integer leagueId, Integer homeTeamId, Integer awayTeamId, Instant matchDate, String stadium, Integer attendance, Integer homeScore, Integer awayScore, String status, Integer apiId, Instant createdAt) {
+    public MatchesRecord(Integer id, Integer leagueId, Integer homeTeamId, Integer awayTeamId, Instant matchDate, String stadium, Integer attendance, Integer homeScore, Integer awayScore, String status, Integer apiId, Instant createdAt, Integer round, String referee, Boolean statsLoaded, Boolean metricsCalculated) {
         super(Matches.MATCHES);
 
         setId(id);
@@ -443,5 +567,9 @@ public class MatchesRecord extends UpdatableRecordImpl<MatchesRecord> implements
         setStatus(status);
         setApiId(apiId);
         setCreatedAt(createdAt);
+        setRound(round);
+        setReferee(referee);
+        setStatsLoaded(statsLoaded);
+        setMetricsCalculated(metricsCalculated);
     }
 }

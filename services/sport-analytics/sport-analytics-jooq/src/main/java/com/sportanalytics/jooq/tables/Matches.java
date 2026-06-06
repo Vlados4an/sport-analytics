@@ -15,12 +15,14 @@ import java.util.List;
 import org.jooq.Check;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
+import org.jooq.Function16;
 import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.OrderField;
 import org.jooq.Record;
-import org.jooq.Row;
+import org.jooq.Records;
+import org.jooq.Row16;
 import org.jooq.Schema;
 import org.jooq.SelectField;
 import org.jooq.Table;
@@ -65,11 +67,17 @@ public class Matches extends TableImpl<MatchesRecord> {
 
     public final TableField<MatchesRecord, String> STATUS = createField(DSL.name("status"), SQLDataType.VARCHAR(20).nullable(false).defaultValue(DSL.field("'scheduled'::character varying", SQLDataType.VARCHAR)), this, "");
 
-    public final TableField<MatchesRecord, Integer> ROUND = createField(DSL.name("round"), SQLDataType.INTEGER, this, "");
-
     public final TableField<MatchesRecord, Integer> API_ID = createField(DSL.name("api_id"), SQLDataType.INTEGER, this, "");
 
     public final TableField<MatchesRecord, Instant> CREATED_AT = createField(DSL.name("created_at"), SQLDataType.INSTANT.nullable(false).defaultValue(DSL.field("now()", SQLDataType.INSTANT)), this, "");
+
+    public final TableField<MatchesRecord, Integer> ROUND = createField(DSL.name("round"), SQLDataType.INTEGER, this, "");
+
+    public final TableField<MatchesRecord, String> REFEREE = createField(DSL.name("referee"), SQLDataType.VARCHAR(80), this, "");
+
+    public final TableField<MatchesRecord, Boolean> STATS_LOADED = createField(DSL.name("stats_loaded"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field("false", SQLDataType.BOOLEAN)), this, "");
+
+    public final TableField<MatchesRecord, Boolean> METRICS_CALCULATED = createField(DSL.name("metrics_calculated"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field("false", SQLDataType.BOOLEAN)), this, "");
 
     private Matches(Name alias, Table<MatchesRecord> aliased) {
         this(alias, aliased, null);
@@ -106,7 +114,8 @@ public class Matches extends TableImpl<MatchesRecord> {
             Internal.createIndex(DSL.name("idx_matches_away_team_id"), Matches.MATCHES, new OrderField[] { Matches.MATCHES.AWAY_TEAM_ID }, false), 
             Internal.createIndex(DSL.name("idx_matches_home_team_id"), Matches.MATCHES, new OrderField[] { Matches.MATCHES.HOME_TEAM_ID }, false), 
             Internal.createIndex(DSL.name("idx_matches_league_id"), Matches.MATCHES, new OrderField[] { Matches.MATCHES.LEAGUE_ID }, false), 
-            Internal.createIndex(DSL.name("idx_matches_match_date"), Matches.MATCHES, new OrderField[] { Matches.MATCHES.MATCH_DATE }, false)
+            Internal.createIndex(DSL.name("idx_matches_match_date"), Matches.MATCHES, new OrderField[] { Matches.MATCHES.MATCH_DATE }, false), 
+            Internal.createIndex(DSL.name("idx_matches_round"), Matches.MATCHES, new OrderField[] { Matches.MATCHES.ROUND }, false)
         );
     }
 
@@ -193,8 +202,20 @@ public class Matches extends TableImpl<MatchesRecord> {
         return new Matches(name.getQualifiedName(), null);
     }
 
+    // -------------------------------------------------------------------------
+    // Row16 type methods
+    // -------------------------------------------------------------------------
+
     @Override
-    public Row fieldsRow() {
-        return super.fieldsRow();
+    public Row16<Integer, Integer, Integer, Integer, Instant, String, Integer, Integer, Integer, String, Integer, Instant, Integer, String, Boolean, Boolean> fieldsRow() {
+        return (Row16) super.fieldsRow();
+    }
+
+    public <U> SelectField<U> mapping(Function16<? super Integer, ? super Integer, ? super Integer, ? super Integer, ? super Instant, ? super String, ? super Integer, ? super Integer, ? super Integer, ? super String, ? super Integer, ? super Instant, ? super Integer, ? super String, ? super Boolean, ? super Boolean, ? extends U> from) {
+        return convertFrom(Records.mapping(from));
+    }
+
+    public <U> SelectField<U> mapping(Class<U> toType, Function16<? super Integer, ? super Integer, ? super Integer, ? super Integer, ? super Instant, ? super String, ? super Integer, ? super Integer, ? super Integer, ? super String, ? super Integer, ? super Instant, ? super Integer, ? super String, ? super Boolean, ? super Boolean, ? extends U> from) {
+        return convertFrom(toType, Records.mapping(from));
     }
 }

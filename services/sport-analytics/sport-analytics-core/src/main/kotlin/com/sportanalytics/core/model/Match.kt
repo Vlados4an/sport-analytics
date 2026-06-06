@@ -14,6 +14,9 @@ data class Match(
     val awayScore: Int? = null,
     val status: String = "scheduled",
     val round: Int? = null,
+    val referee: String? = null,
+    val statsLoaded: Boolean = false,
+    val metricsCalculated: Boolean = false,
     val apiId: Int? = null,
     val createdAt: Instant = Instant.now(),
 )
